@@ -1,0 +1,68 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STAFF
+  ADMIN
+}
+
+//Data modelling
+//minimum 3 parts: id datatype followed by 1 or more @attributes
+//each model must have a field with @id attribute.
+model User {
+  id           Int     @id @default(autoincrement())
+  age          Int
+  name         String
+  phone        String?
+  email        String  @unique
+  role         Role    @default(ADMIN)
+  preferences  Json?
+  //One to Many RelationShip
+  writtenPosts Post[]  @relation("writtenPosts")
+  likedPosts   Post[]  @relation("likedPosts")
+
+  //One to One RelationShip , ? is obsolette
+  userPreferences   UserPreference? @relation(fields: [userPreferencesId], references: [id])
+  userPreferencesId String?         @unique
+
+  //compound uniqueness
+  @@unique([age, name])
+  //for filtering
+  @@index([email])
+}
+
+model UserPreference {
+  id           String  @id @default(uuid())
+  emailUpdates Boolean
+  //One to One RelationShip , ? is obsolette
+  user         User?
+}
+
+model Post {
+  id            String     @id @default(uuid())
+  title         String
+  averageRating Float
+  author        User       @relation("writtenPosts", fields: [author_Id], references: [id])
+  author_Id     Int
+  likedBy       User       @relation("likedPosts", fields: [likedBy_Id], references: [id])
+  likedBy_Id    Int
+  rating        Float
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @updatedAt
+  categories    Category[]
+}
+
+model Category {
+  id    String @id @default(uuid())
+  name  String @unique
+  posts Post[]
+}
